@@ -9,10 +9,14 @@ def draw_full_graph(data, probs=None, ax=None):
     probs: length N numpy array
     x: matplotlib AxesSubplot object
     """
+    print(probs)
+    print(data)
+    print(data.x)
+    print(data.edge_index)
     g = nx.Graph()
     g.add_edges_from(data.edge_index)
 
-    print(probs)
+    
 
     green = np.array([0.0, 1.0, 0.0])
     red = np.array([1.0, 0.0, 0.0])

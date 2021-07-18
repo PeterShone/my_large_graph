@@ -9,6 +9,10 @@ def draw_full_graph(data, probs=None, ax=None):
     probs: length N numpy array
     x: matplotlib AxesSubplot object
     """
+    g = nx.Graph()
+    g.add_edges_from(data.edge_index)
+
+    print(probs)
 
     green = np.array([0.0, 1.0, 0.0])
     red = np.array([1.0, 0.0, 0.0])
@@ -25,8 +29,6 @@ def draw_full_graph(data, probs=None, ax=None):
         edge_probs = [probs[i] * probs[j] for i, j in g.edges]
         edge_colors = [blue + (red - blue) * prob for prob in edge_probs]
 
-    g = nx.Graph()
-    g.add_edges_from(data.edge_index)
     # pos = None
     pos = nx.circular_layout(g)
 

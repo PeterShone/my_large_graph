@@ -1,5 +1,6 @@
 import networkx as nx
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def draw_full_graph(g, probs=None, ax=None):
@@ -24,8 +25,8 @@ def draw_full_graph(g, probs=None, ax=None):
         edge_probs = [probs[i] * probs[j] for i, j in g.edges]
         edge_colors = [blue + (red - blue) * prob for prob in edge_probs]
 
-    pos = None
-    # pos = nx.circular_layout(g)
+    # pos = None
+    pos = nx.circular_layout(g)
 
     nx.draw_networkx(g,
                      with_labels=False,
@@ -36,3 +37,6 @@ def draw_full_graph(g, probs=None, ax=None):
                      edge_color=edge_colors,
                      ax=ax,
                      node_color=node_colors)
+    
+    plt.tight_layout()
+    plt.savefig("Graph.png", format="PNG")

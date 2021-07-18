@@ -5,6 +5,7 @@ from torch_geometric.data import DataLoader
 from solver.ml_core.losses import AreaLoss, OverlapLoss
 from torch.utils.tensorboard import SummaryWriter
 from utils.visualize import draw_full_graph
+import networkx as nx
 
 
 class Trainer():
@@ -119,6 +120,9 @@ class Trainer():
             # get prediction
             data = batch.to(self.device)
             probs = self.network(x=data.x, col_e_idx=data.edge_index)
+            # plot the graph
+            g = nx.to_networkx(data.x, to_undirected=True)
+            draw_full_graph(g, probs)
 
             loss_area = self.area_loss(probs)
             try:

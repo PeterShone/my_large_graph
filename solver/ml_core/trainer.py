@@ -5,7 +5,6 @@ from torch_geometric.data import DataLoader
 from solver.ml_core.losses import AreaLoss, OverlapLoss
 from torch.utils.tensorboard import SummaryWriter
 from utils.visualize import draw_full_graph
-from torch_geometric.utils import to_networkx
 
 
 class Trainer():
@@ -120,11 +119,10 @@ class Trainer():
             # get prediction
             data = batch.to(self.device)
             probs = self.network(x=data.x, col_e_idx=data.edge_index)
-            
-            # plot the graph
-            g = to_networkx(data.x, to_undirected=True)
-            draw_full_graph(g, probs)
 
+            # plot the graph
+            draw_full_graph(data, probs)
+            
             loss_area = self.area_loss(probs)
             try:
                 assert loss_area >= 1.0

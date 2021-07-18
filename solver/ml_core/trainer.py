@@ -4,6 +4,7 @@ import torch
 from torch_geometric.data import DataLoader
 from solver.ml_core.losses import AreaLoss, OverlapLoss
 from torch.utils.tensorboard import SummaryWriter
+from utils.visualize import draw_full_graph
 
 
 class Trainer():

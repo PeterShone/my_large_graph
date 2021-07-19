@@ -119,9 +119,9 @@ class Trainer():
             # get prediction
             data = batch.to(self.device)
             probs = self.network(x=data.x, col_e_idx=data.edge_index)
-
+            print(probs)
             # plot the graph
-            draw_full_graph(data, probs)
+            #draw_full_graph(data, probs)
             
             loss_area = self.area_loss(probs)
             try:

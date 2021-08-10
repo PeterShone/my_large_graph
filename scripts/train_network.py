@@ -19,7 +19,7 @@ if __name__ == "__main__":
     parser.add_argument("-c",
                         "--config",
                         type=str,
-                        default=parentdir + "/configs/config.json")
+                        default=parentdir + "/configs/extra_1.json")
     args = parser.parse_args()
 
     with open(args.config, "r") as f:

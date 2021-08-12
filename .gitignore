@@ -1,6 +1,6 @@
 .history
 .DS_Store
-released_models/
+# released_models/
 # logs/
 *.swp
 data/

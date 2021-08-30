@@ -6,6 +6,7 @@ from torch_geometric.utils import subgraph
 # import numpy as np
 import os
 import gzip
+import pickle
 
 
 def gen_subgraph(graph, size_min, size_max, node_idx, expected_size):
@@ -175,4 +176,90 @@ class GraphDataset(Dataset):
             os.path.join(self.processed_dir, self.split,
                          'data_{}.pt'.format(idx)))
         data.idx = idx
+        return data
+
+
+class TileGraphDataset(Dataset):
+    def __init__(self,
+                 root,
+                 split="train",
+                 subgraph_num=2000,
+                 logger_name="DATASET",
+                 transform=None,
+                 pre_transform=None):
+        self.logger = logging.getLogger(logger_name)
+        self.split = split
+        self.subgraph_num = subgraph_num
+        super(TileGraphDataset, self).__init__(root, transform, pre_transform)
+
+    @property
+    def raw_file_names(self):
+        return [
+            os.path.join(self.split, f"data_{i}.pkl")
+            for i in range(self.subgraph_num)
+        ]
+
+    @property
+    def processed_file_names(self):
+        return [
+            os.path.join(self.split, 'data_{}.pt'.format(i))
+            for i in range(self.subgraph_num)
+        ]
+
+    def len(self):
+        return len(self)
+
+    def __len__(self):
+        return len(self.processed_file_names)
+
+    def download(self):
+        self.logger.error("please generate tile graph data first")
+
+    def process(self):
+        self.logger.info("processing the data...")
+        if not os.path.exists(os.path.join(self.processed_dir, self.split)):
+            os.mkdir(os.path.join(self.processed_dir, self.split))
+        for raw_path in self.raw_file_names:
+            try:
+                target_path = os.path.splitext(
+                    os.path.join(self.processed_dir, raw_path))[0] + ".pt"
+                if os.path.exists(target_path):
+                    continue
+                with open(os.path.join(self.raw_dir, raw_path), "rb") as f:
+                    d = pickle.load(f)
+            except Exception as e:
+                self.logger.error("read {} {}".format(str(e), raw_path))
+
+            try:
+                node_features = [
+                    feature[-1:] for feature in d["node_features"]
+                ]
+                node_features = torch.tensor(node_features,
+                                             dtype=torch.float32)
+                edges = d["collide_edge_index"]
+                edges = torch.tensor(edges, dtype=torch.long)
+
+                data = Data(x=node_features, edge_index=edges)
+                data.num_nodes = len(node_features)
+
+                if self.pre_filter is not None and not self.pre_filter(data):
+                    continue
+
+                if self.pre_transform is not None:
+                    data = self.pre_transform(data)
+
+                self.logger.info("{}, node: {}, edge: {}".format(
+                    target_path, data.num_nodes, data.num_edges))
+                torch.save(data, target_path)
+            except Exception as e:
+                self.logger.error("{} {}".format(str(e), raw_path))
+
+    def get(self, idx):
+        try:
+            data = torch.load(
+                os.path.join(self.processed_dir, self.split,
+                             'data_{}.pt'.format(idx)))
+            data.idx = idx
+        except FileNotFoundError:
+            data = self.get(0)
         return data

@@ -21,6 +21,7 @@ class Trainer():
                  loss_weights=None,
                  sample_per_epoch=0,
                  sample_method="bernoulli",
+                 bernoulli_prob=0.81,
                  resume=True,
                  total_train_epoch=100,
                  save_model_per_epoch=5):
@@ -51,7 +52,7 @@ class Trainer():
         # self.solution_loss = torch.nn.CrossEntropyLoss()
         if sample_method == "bernoulli":
             from utils.graph_utils import generate_bernoulli
-            self.sample_solution = generate_bernoulli(prob=0.9)
+            self.sample_solution = generate_bernoulli(prob=bernoulli_prob)
         elif sample_method == "greedy":
             from utils.graph_utils import sample_solution_greedy
             self.sample_solution = sample_solution_greedy
@@ -71,7 +72,7 @@ class Trainer():
         if resume is True:
             self.load()
 
-    def save(self):
+    def save(self, prefix=""):
         try:
             os.mkdir(self.model_save_path)
         except FileExistsError:
@@ -79,11 +80,11 @@ class Trainer():
         torch.save(
             self.network.state_dict(),
             os.path.join(self.model_save_path,
-                         "model_{}.pth".format(self.epoch)))
+                         "{}model_{}.pth".format(prefix, self.epoch)))
         torch.save(
             self.optimizer.state_dict(),
             os.path.join(self.model_save_path,
-                         "optimizer_{}.pth".format(self.epoch)))
+                         "{}optimizer_{}.pth".format(prefix, self.epoch)))
         data_dict = {
             "epoch": self.epoch,
             "min_test_loss": self.min_test_loss,
@@ -93,9 +94,11 @@ class Trainer():
         torch.save(
             data_dict,
             os.path.join(self.model_save_path,
-                         "datadict_{}.pth".format(self.epoch)))
+                         "{}datadict_{}.pth".format(prefix, self.epoch)))
 
-        torch.save(data_dict, os.path.join(self.model_save_path, "latest.pth"))
+        torch.save(
+            data_dict,
+            os.path.join(self.model_save_path, "{}latest.pth".format(prefix)))
 
     def load(self):
         target_path = os.path.join(self.model_save_path, "latest.pth")
@@ -137,7 +140,7 @@ class Trainer():
             if self.epoch % 20 == 0 and self.epoch > 0 and j < 10:
                 self.greedy_based_solution(batch, probs.cpu().detach().numpy())
                 j = j + 1
-            area_losses.append(self.area_loss(probs).detach())
+            area_losses.append(self.area_loss(probs, data.x).detach())
             collision_losses.append(
                 self.collision_loss(probs, data.edge_index).detach())
         area_losses = torch.stack(area_losses)
@@ -152,6 +155,7 @@ class Trainer():
         i = self.epoch
         self.network.train()
         for batch in self.loader_train:
+            self.optimizer.zero_grad()
             # get prediction
             data = batch.to(self.device)
             probs = self.network(x=data.x, col_e_idx=data.edge_index)
@@ -159,10 +163,10 @@ class Trainer():
                 assert not torch.any(torch.isnan(probs))
             except AssertionError:
                 torch.save(probs, "./probs.pt")
-                self.save()
+                self.save("nan")
                 sys.exit("probs, data: {}".format(data.idx))
 
-            loss_area = self.area_loss(probs)
+            loss_area = self.area_loss(probs, data.x)
             try:
                 assert loss_area >= 1.0
             except AssertionError:
@@ -188,12 +192,13 @@ class Trainer():
             if self.sample_per_epoch and i % self.sample_per_epoch == 0:
                 with torch.no_grad():
                     _, mask = self.sample_solution(data, probs)
+                    mask = torch.unsqueeze(mask, 1)
                     solution = torch.where(mask, 1.0, 0.0)
-                    score_area = self.area_loss(solution).detach()
+                    score_area = self.area_loss(solution, data.x).detach()
                     score_coll = self.collision_loss(solution,
                                                      data.edge_index).detach()
                     score = score_area * score_coll
-                    solution = solution.long()
+                    # solution = solution.long()
                     reward = train_loss - score
 
                 loss_solution = self.solution_loss(probs, mask, reward)
@@ -205,10 +210,9 @@ class Trainer():
                 train_loss = train_loss * loss_solution
 
             try:
-                self.optimizer.zero_grad()
                 train_loss.backward()
             except RuntimeError:
-                self.save()
+                self.save("backward")
             self.optimizer.step()
 
             self.logger.debug(", ".join(log_items))

@@ -15,8 +15,7 @@ class AreaLoss(nn.Module):
         if areas is None:
             avg_area = torch.mean(x)
         else:
-            # different from tilingnn, to be confirmed
-            avg_area = x * areas / torch.sum(areas)
+            avg_area = torch.sum(x * areas) / torch.sum(areas)
         avg_area = torch.clamp(avg_area, min=self.eps)
         result = 1.0 - self.weight * torch.log(avg_area)
         # assert 1.0 <= result
@@ -47,14 +46,16 @@ class OverlapLoss(nn.Module):
 
 
 class SolutionLoss(nn.Module):
-    def __init__(self, weight=10.0, eps=1e-7):
+    def __init__(self, weight=10.0, scale=0.1, eps=1e-7):
         super(SolutionLoss, self).__init__()
         self.weight = weight
+        self.scale = scale
         self.eps = eps
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x, solution_mask, reward):
-        temp = torch.mean(
-            torch.where(solution_mask, 1.0, -1.0) * torch.log(x)) * reward
-        result = 1 + self.weight * self.sigmoid(1 - temp)
+        solution_sign = torch.where(solution_mask, 1.0, -1.0).detach()
+        weighted_reward = torch.mean(solution_sign * x) * reward
+        weighted_reward = weighted_reward * self.scale
+        result = 1 + self.weight * (1 - self.sigmoid(weighted_reward))
         return result

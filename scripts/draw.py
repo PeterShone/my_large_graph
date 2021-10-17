@@ -20,7 +20,7 @@ if __name__ == "__main__":
     parser.add_argument("-c",
                         "--config",
                         type=str,
-                        default=parentdir + "/configs/extra_5.json")
+                        default=parentdir + "/configs/config.json")
     args = parser.parse_args()
 
     with open(args.config, "r") as f:
@@ -91,16 +91,22 @@ if __name__ == "__main__":
         save_model_per_epoch=config["training"]["save_model_per_epoch"])
 
     from solver.ml_solver import MLSolver
-    from interfaces.qt_plot import Plotter
     from tiling.tile_graph import TileGraph
+    from tiling.tile_solve import tile_silhouette_list
 
     solver = MLSolver(device=device, network=gnn, trainer=trainer)
 
     complete_graph = TileGraph(config['tiling']['tile_count'])
     complete_graph.load_graph_state(config['tiling']['complete_graph_path'])
+    tile_silhouette_list(
+        solver,
+        complete_graph,
+        silhouette_list=config["tiling"]["silhouette_list"],
+        save_path=config["training"]["log_dir"],
+        cropped_layouts_dir=config["tiling"]["cropped_layouts_dir"])
 
-    trainer.train(plotter=Plotter(),
-                  solver=solver,
-                  complete_graph=complete_graph)
+    # trainer.train(plotter=Plotter(),
+    #               solver=solver,
+    #               complete_graph=complete_graph)
 
     vdisplay.stop()

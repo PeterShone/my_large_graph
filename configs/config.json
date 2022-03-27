@@ -1,0 +1,61 @@
+{
+    "seed": 999,
+    "logging_level": "DEBUG",
+    "selector": {
+        "training": {
+            "data_path": "./data",
+            "dataset_size": {
+                "train": 3,
+                "test": 3
+            },
+            "model_save_path": "./results/test/released_models",
+            "total_train_epoch": 1000,
+            "save_model_per_epoch": 3,
+            "log_dir": "./results/test/logs",
+            "optimizer": {
+                "lr": 1e-5
+            },
+            "show_intermediate": true
+        },
+        "network": {
+            "depth": 5,
+            "width": 32,
+            "output_dim": 1
+        }
+    },
+    "solver": {
+        "training": {
+            "data_path": "./data",
+            "dataset_size": {
+                "train": 3,
+                "test": 3
+            },
+            "model_save_path": "./results/10-1-10-4/released_models",
+            "total_train_epoch": 10000,
+            "save_model_per_epoch": 5,
+            "log_dir": "./results/10-1-10-4/logs",
+            "loss": {
+                "area_weight": 10.0,
+                "collision_weight": 1.0,
+                "solution_weight": 10.0
+            },
+            "sample_per_epoch": 1,
+            "sample_method": "solver",
+            "optimizer": {
+                "lr": 1e-4
+            }
+        },
+        "network": {
+            "depth": 10,
+            "width": 32,
+            "output_dim": 1
+        },
+        "solve_method": "onetime"
+    },
+    "tiling": {
+        "complete_graph_path": "./data/complete_graph_ring13.pkl",
+        "cropped_layouts_dir": "/research/dept8/fyp21/cwf2101/shared/contours/L3+long_tile_ring10",
+        "tile_count": 2,
+        "silhouette_list": "/research/dept8/fyp21/cwf2101/rchuan/working/large_graph/configs/silhouette_list.txt"
+    }
+}
